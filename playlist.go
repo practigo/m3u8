@@ -102,9 +102,18 @@ func (p *Playlist) MarshalTo(w io.Writer) {
 	return
 }
 
+// MarshalToWithErr ...
+func (p *Playlist) MarshalToWithErr(iw io.Writer) error {
+	w := &writer{iw: iw}
+	p.MarshalTo(w)
+
+	return w.err
+}
+
 // Marshal ...
 func (p *Playlist) Marshal() string {
 	var b bytes.Buffer
+	// b.Write never returns error
 	p.MarshalTo(&b)
 	return b.String()
 }

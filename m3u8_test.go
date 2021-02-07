@@ -2,6 +2,7 @@ package m3u8_test
 
 import (
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/practigo/m3u8"
@@ -43,6 +44,33 @@ func TestM3U8(t *testing.T) {
 	p.Remove(second)
 
 	t.Log(p.Marshal())
+
+	// error test
+	tmpFile := filepath.Join(os.TempDir(), "test.m3u8")
+	tf, err := os.OpenFile(tmpFile, os.O_RDONLY|os.O_CREATE|os.O_TRUNC, 0444)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = p.MarshalToWithErr(tf)
+	if err == nil {
+		t.Error("should have write error")
+	} else {
+		t.Log(err)
+	}
+	tf.Close()
+	os.Remove(tmpFile)
+
+	tmpFile = filepath.Join(os.TempDir(), "test2.m3u8")
+	tf, err = os.Create(tmpFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = p.MarshalToWithErr(tf)
+	if err != nil {
+		t.Error("should not have write error")
+	}
+	tf.Close()
+	os.Remove(tmpFile)
 }
 
 func TestResolveURL(t *testing.T) {

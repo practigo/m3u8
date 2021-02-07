@@ -5,6 +5,20 @@ import (
 	"net/url"
 )
 
+type writer struct {
+	err error
+	iw  io.Writer
+}
+
+func (w *writer) Write(p []byte) (int, error) {
+	if w.err == nil {
+		n, err := w.iw.Write(p)
+		w.err = err
+		return n, err
+	}
+	return 0, nil
+}
+
 func writeLine(w io.Writer, l string) (int, error) {
 	return w.Write([]byte(l + "\n"))
 }
