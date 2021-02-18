@@ -12,6 +12,7 @@ import (
 // exported errors
 var (
 	ErrUnknownLine = errors.New("unknown line")
+	ErrMissingInf  = errors.New("missing #EXTINF tag")
 	ErrInvalidSeg  = errors.New("invalid Entry")
 )
 
@@ -22,6 +23,11 @@ type Playlist struct {
 	Version        int    // EXT-X-VERSION
 	Closed         bool   // EXT-X-ENDLIST
 	Directives     string // all the un-parsed
+	// IOnly          bool
+	// Indi           bool
+	// Type           string
+	// StartAttr      string
+	// DisSeq         int
 
 	// internal list
 	l *list.List
@@ -79,13 +85,13 @@ func (p *Playlist) InsertAfter(ref *Entry, target Entry) error {
 func (p *Playlist) MarshalTo(w io.Writer) {
 	writeLine(w, starter)
 	if p.Version > 0 {
-		writeLine(w, fmt.Sprintf(verTagFormat, p.Version))
+		writeLine(w, fmt.Sprintf(tagFormats[verTag], p.Version))
 	}
 	if p.TargetDuration > 0 {
-		writeLine(w, fmt.Sprintf(durTagFormat, int(p.TargetDuration)))
+		writeLine(w, fmt.Sprintf(tagFormats[durTag], int(p.TargetDuration)))
 	}
 	if p.SeqNo >= 0 {
-		writeLine(w, fmt.Sprintf(seqTagFormat, p.SeqNo))
+		writeLine(w, fmt.Sprintf(tagFormats[seqTag], p.SeqNo))
 	}
 	if p.Directives != "" {
 		writeLine(w, strings.TrimSpace(p.Directives))

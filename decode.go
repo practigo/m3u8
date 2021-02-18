@@ -9,24 +9,35 @@ import (
 	"strings"
 )
 
+// by rfc8216
 const (
+	// basic tags
 	starter = "#EXTM3U"
-	ender   = "#EXT-X-ENDLIST"
+	verTag  = "#EXT-X-VERSION"
 
+	// media playlist tags
+	ender     = "#EXT-X-ENDLIST"
+	durTag    = "#EXT-X-TARGETDURATION"         // required
+	seqTag    = "#EXT-X-MEDIA-SEQUENCE"         // default 0
+	disSeqTag = "#EXT-X-DISCONTINUITY-SEQUENCE" // default 0
+	typeTag   = "#EXT-X-PLAYLIST-TYPE"          // EVENT or VOD
+	iOnlyTag  = "#EXT-X-I-FRAMES-ONLY"
+	// both master and playlist tags
+	indiTag  = "#EXT-X-INDEPENDENT-SEGMENTS"
+	startTag = "#EXT-X-START" // contains a attribute list
+
+	// segment tags
 	infTag = "#EXTINF"
 	disTag = "#EXT-X-DISCONTINUITY"
-
-	// infTagFormat = "#EXTINF:%.6f,%s"
-	verTagFormat = "#EXT-X-VERSION:%d"
-	durTagFormat = "#EXT-X-TARGETDURATION:%d"
-	seqTagFormat = "#EXT-X-MEDIA-SEQUENCE:%d"
 )
 
-var formatPrefix = map[string]string{
-	// infTagFormat: infTagFormat[:8],
-	verTagFormat: verTagFormat[:15],
-	durTagFormat: durTagFormat[:22],
-	seqTagFormat: seqTagFormat[:22],
+var tagFormats = map[string]string{
+	verTag: verTag + ":%d",
+	durTag: durTag + ":%d",
+	seqTag: seqTag + ":%d",
+	// disSeqTag: disSeqTag + ":%d",
+	// typeTag:   typeTag + ":%s",
+	// startTag:  startTag + ":%s",
 }
 
 // #EXTM3U
@@ -39,56 +50,89 @@ var formatPrefix = map[string]string{
 // a.ts
 // #EXT-X-ENDLIST
 func decodeLine(l string, p *Playlist) (err error) {
-	l = strings.TrimSpace(l)
-
-	if !strings.HasPrefix(l, "#") {
-		p.cur.URI = l
-		p.Append(*p.cur)
-		p.cur = new(Entry)
-		return nil
+	// Each line is a URI, is blank, or starts with the
+	// character '#'.  Blank lines are ignored.
+	// Whitespace MUST NOT be present
+	l = strings.TrimSpace(l) // here leading or trailing spaces are removed
+	if len(l) < 1 {
+		return
 	}
 
-	parseLine := func(line, format string, a ...interface{}) bool {
-		if strings.HasPrefix(line, formatPrefix[format]) {
-			_, err = fmt.Sscanf(line, format, a...) // err as closure
+	parseLine := func(line, tag string, a ...interface{}) bool {
+		if strings.HasPrefix(line, tag) {
+			_, err = fmt.Sscanf(line, tagFormats[tag], a...) // err as closure
 			return true
 		}
 		return false
 	}
 
-	switch {
-	case l == starter:
-		// normal
-	case l == ender:
-		p.Closed = true
-	case l == disTag:
-		p.cur.Discontinuity = true
-	case parseLine(l, verTagFormat, &p.Version) ||
-		parseLine(l, seqTagFormat, &p.SeqNo) ||
-		parseLine(l, durTagFormat, &p.TargetDuration):
-	case strings.HasPrefix(l, infTag):
-		p.entriesStarted = true
-		if sepIndex := strings.Index(l, ","); sepIndex > -1 {
-			p.cur.Duration, err = strconv.ParseFloat(l[8:sepIndex], 64)
-			if len(l) > sepIndex {
-				p.cur.Title = l[sepIndex+1:]
-			}
-		} else {
-			err = errors.New("no \",\" in info tag")
-		}
-	case strings.HasPrefix(l, "#EXT-X"):
-		if p.entriesStarted {
-			p.cur.Directives += l + "\n"
-		} else {
+	if !p.entriesStarted {
+		// parse playlist tags
+		switch {
+		case l == starter:
+			// normal
+		case strings.HasPrefix(l, typeTag) ||
+			strings.HasPrefix(l, indiTag) ||
+			strings.HasPrefix(l, iOnlyTag) ||
+			strings.HasPrefix(l, disSeqTag) ||
+			strings.HasPrefix(l, startTag):
 			p.Directives += l + "\n"
+		// case l == indiTag:
+		// 	p.Indi = true
+		// case l == iOnlyTag:
+		// 	p.IOnly = true
+		case parseLine(l, verTag, &p.Version) ||
+			parseLine(l, seqTag, &p.SeqNo) ||
+			// parseLine(l, startTag, &p.StartAttr) ||
+			// parseLine(l, typeTag, &p.Type) ||
+			// parseLine(l, disSeqTag, &p.DisSeq) ||
+			parseLine(l, durTag, &p.TargetDuration):
+			// pass
+		case strings.HasPrefix(l, "#EXT"):
+			// other tags than previous
+			p.entriesStarted = true
+		case strings.HasPrefix(l, "#"):
+			// comments ingored
+		default:
+			err = ErrUnknownLine
 		}
-	default:
-		// if strict should be error
-		err = ErrUnknownLine
+	}
+
+	if p.entriesStarted {
+		switch {
+		case l == ender:
+			p.Closed = true
+		case !strings.HasPrefix(l, "#"):
+			if p.cur.Duration == 0.0 {
+				return ErrMissingInf
+			}
+			p.cur.URI = l
+			p.Append(*p.cur)
+			p.cur = new(Entry)
+		case strings.HasPrefix(l, "#EXT"):
+			if l == disTag {
+				p.cur.Discontinuity = true
+			}
+			if strings.HasPrefix(l, infTag) {
+				if sepIndex := strings.Index(l, ","); sepIndex > -1 {
+					p.cur.Duration, err = strconv.ParseFloat(l[8:sepIndex], 64)
+					if len(l) > sepIndex {
+						p.cur.Title = l[sepIndex+1:]
+					}
+				} else {
+					err = errors.New("no \",\" in info tag")
+				}
+			}
+			// all add to directives
+			p.cur.Directives += l + "\n"
+		default:
+			// same as strings.HasPrefix(l, "#"):
+			// comments ingored
+		}
 	}
 
 	if err != nil {
-		err = fmt.Errorf("parse line %s: %s", l, err.Error())
+		err = fmt.Errorf("parse line %s: %w", l, err)
 	}
 	return
 }
@@ -96,12 +140,22 @@ func decodeLine(l string, p *Playlist) (err error) {
 // Decode reads from r and tries to decode it as a
 // m3u8 index file.
 func Decode(r io.Reader) (p *Playlist, err error) {
+	return DecodeStrict(r, true)
+}
+
+// DecodeStrict reads from r and tries to decode it as a
+// m3u8 index file. If strict, directive line not start
+// #EXT will be consider error and returns an ErrUnknownLine.
+func DecodeStrict(r io.Reader, strict bool) (p *Playlist, err error) {
 	p = New()
 	p.cur = new(Entry)
 
 	s := bufio.NewScanner(r)
 	for s.Scan() {
 		if err = decodeLine(s.Text(), p); err != nil {
+			if errors.Is(err, ErrUnknownLine) && !strict {
+				continue
+			}
 			return
 		}
 	}
