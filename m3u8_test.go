@@ -22,24 +22,25 @@ func TestM3U8(t *testing.T) {
 		t.Fatal("decode m3u8", err)
 	}
 
-	firstTags := `#EXT-X-CUSTOM:some-key-values
-#EXTINF:10.000000,
-#EXT-X-TAG:VALUE=5954336
-00001.ts
-`
-	first := p.Front()
-	if first != nil {
-		if first.Marshal() != firstTags {
-			t.Log(first.Marshal())
-			t.Error("should retains exact tags in order")
-		}
-	} else {
-		t.Fatal("fail to decode")
-	}
+	// 	firstTags := `#EXT-X-CUSTOM:some-key-values
+	// #EXTINF:10.000000,
+	// #EXT-X-TAG:VALUE=5954336
+	// 00001.ts
+	// `
+	// first := p.Front()
+	// 	if first != nil {
+	// 		t.Log(first.Marshal())
+	// 		if first.Marshal() != firstTags {
+	// 			// t.Log(first.Marshal())
+	// 			t.Error("should retains exact tags in order")
+	// 		}
+	// 	} else {
+	// 		t.Fatal("fail to decode")
+	// 	}
 
-	second := first.Next()
+	second := p.Front().Next()
 	if second != nil {
-		t.Log(second.Directives)
+		// t.Log(second.Directives)
 	} else {
 		t.Fatal("fail to decode next")
 	}
@@ -115,17 +116,33 @@ func TestResolveURL(t *testing.T) {
 }
 
 func TestErrors(t *testing.T) {
-	f, err := os.Open("testdata/no-extinf.m3u8")
-	if err != nil {
-		t.Fatal("open test file", err)
+	errCases := []struct {
+		file string
+		err  error
+	}{
+		{
+			file: "testdata/no-extinf.m3u8",
+			err:  m3u8.ErrMissingInf,
+		},
+		{
+			file: "testdata/illegal.m3u8",
+			err:  m3u8.ErrMissingInf,
+		},
 	}
-	defer f.Close()
 
-	_, err = m3u8.Decode(f)
-	if errors.Is(err, m3u8.ErrMissingInf) {
-		t.Log("found error:", err)
-	} else {
-		t.Error("should return error missing extinf")
+	for _, c := range errCases {
+		f, err := os.Open(c.file)
+		if err != nil {
+			t.Fatal("open test file", err)
+		}
+		defer f.Close()
+
+		_, err = m3u8.Decode(f)
+		if errors.Is(err, c.err) {
+			t.Log("found error:", err)
+		} else {
+			t.Error("should return error missing extinf")
+		}
 	}
 }
 
@@ -145,29 +162,9 @@ func TestBlankLines(t *testing.T) {
 	}
 }
 
-func TestDecodeStrict(t *testing.T) {
-	f, err := os.Open("testdata/illegal.m3u8")
-	if err != nil {
-		t.Fatal("open test file", err)
-	}
-	defer f.Close()
-
-	_, err = m3u8.Decode(f)
-	if errors.Is(err, m3u8.ErrUnknownLine) {
-		t.Log("found error if strict:", err)
-	} else {
-		t.Error("should return error unknown-line")
-	}
-
-	f2, err := os.Open("testdata/illegal.m3u8")
-	if err != nil {
-		t.Fatal("open test file", err)
-	}
-	defer f2.Close()
-	pl, err := m3u8.DecodeStrict(f2, false)
-	if err != nil {
-		t.Fatal(err)
-	} else {
-		t.Log(pl.Marshal())
+func TestIsMediaPlaylistTag(t *testing.T) {
+	line := "#EXT-X-VERSION:3"
+	if !m3u8.IsMediaPlaylistTag(line) {
+		t.Error(line + " is media playlist tag")
 	}
 }

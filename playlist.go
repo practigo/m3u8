@@ -31,10 +31,6 @@ type Playlist struct {
 
 	// internal list
 	l *list.List
-
-	// decoding states
-	entriesStarted bool
-	cur            *Entry
 }
 
 // New returns an empty m3u8 playlist.
@@ -85,13 +81,13 @@ func (p *Playlist) InsertAfter(ref *Entry, target Entry) error {
 func (p *Playlist) MarshalTo(w io.Writer) {
 	writeLine(w, starter)
 	if p.Version > 0 {
-		writeLine(w, fmt.Sprintf(tagFormats[verTag], p.Version))
+		writeLine(w, fmt.Sprintf(verTag+":%d", p.Version))
 	}
 	if p.TargetDuration > 0 {
-		writeLine(w, fmt.Sprintf(tagFormats[durTag], int(p.TargetDuration)))
+		writeLine(w, fmt.Sprintf(durTag+":%d", int(p.TargetDuration)))
 	}
 	if p.SeqNo >= 0 {
-		writeLine(w, fmt.Sprintf(tagFormats[seqTag], p.SeqNo))
+		writeLine(w, fmt.Sprintf(seqTag+":%d", p.SeqNo))
 	}
 	if p.Directives != "" {
 		writeLine(w, strings.TrimSpace(p.Directives))
@@ -104,8 +100,6 @@ func (p *Playlist) MarshalTo(w io.Writer) {
 	if p.Closed {
 		writeLine(w, ender)
 	}
-
-	return
 }
 
 // MarshalToWithErr ...

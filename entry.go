@@ -21,7 +21,7 @@ type Entry struct {
 }
 
 func (s *Entry) marshalTo(w io.Writer) {
-	if s.Discontinuity && strings.Index(s.Directives, disTag) == -1 {
+	if s.Discontinuity {
 		writeLine(w, disTag)
 	}
 
@@ -29,9 +29,7 @@ func (s *Entry) marshalTo(w io.Writer) {
 		writeLine(w, strings.TrimSpace(s.Directives))
 	}
 
-	if strings.Index(s.Directives, infTag) == -1 {
-		writeLine(w, fmt.Sprintf("#EXTINF:%.6f,%s", s.Duration, s.Title))
-	}
+	writeLine(w, fmt.Sprintf("#EXTINF:%.6f,%s", s.Duration, s.Title))
 
 	writeLine(w, s.URI)
 }
