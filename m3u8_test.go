@@ -168,3 +168,53 @@ func TestIsMediaPlaylistTag(t *testing.T) {
 		t.Error(line + " is media playlist tag")
 	}
 }
+
+func TestMaster(t *testing.T) {
+	f, err := os.Open("testdata/alt-videos.m3u8")
+	if err != nil {
+		t.Fatal("open test file", err)
+	}
+	defer f.Close()
+
+	m, err := m3u8.DecodeMaster(f)
+	if err != nil {
+		t.Fatal("should try to decode a master")
+	}
+	t.Log(m.Marshal())
+
+	f, err = os.Open("testdata/sample.m3u8")
+	if err != nil {
+		t.Fatal("open test file", err)
+	}
+	defer f.Close()
+
+	_, err = m3u8.DecodeMaster(f)
+	if err != m3u8.ErrMissingStream {
+		t.Fatal("should be ErrMissingStream")
+	}
+}
+
+func TestTryDecodeMaster(t *testing.T) {
+	f, err := os.Open("testdata/master.m3u8")
+	if err != nil {
+		t.Fatal("open test file", err)
+	}
+	defer f.Close()
+
+	m, err := m3u8.TryDecodeMaster(f)
+	if err != nil {
+		t.Fatal("should try to decode a master")
+	}
+	t.Log(m)
+
+	f, err = os.Open("testdata/sample.m3u8")
+	if err != nil {
+		t.Fatal("open test file 2", err)
+	}
+	defer f.Close()
+
+	_, err = m3u8.TryDecodeMaster(f)
+	if err != m3u8.ErrNotMaster {
+		t.Fatal("should report no master")
+	}
+}

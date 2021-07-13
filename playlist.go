@@ -14,6 +14,9 @@ var (
 	ErrUnknownLine = errors.New("unknown line")
 	ErrMissingInf  = errors.New("missing #EXTINF tag")
 	ErrInvalidSeg  = errors.New("invalid Entry")
+
+	ErrMissingStream = errors.New("missing #EXT-X-STREAM-INF tag")
+	ErrNotMaster     = errors.New("not master playlist")
 )
 
 // Playlist is a m3u8 playlist.
