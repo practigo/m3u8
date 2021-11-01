@@ -1,8 +1,11 @@
 package m3u8
 
 import (
+	"errors"
 	"io"
 	"net/url"
+	"regexp"
+	"strings"
 )
 
 type writer struct {
@@ -34,5 +37,21 @@ func ResolveURL(index, entry string) (resolved string, err error) {
 		return
 	}
 	resolved = i.ResolveReference(ref).String()
+	return
+}
+
+var regSplitAttr = regexp.MustCompile(`[^,]+="([^"]*)"|[^,]+=[^,]+`)
+
+func SplitAttributeList(l string) (attr map[string]string, err error) {
+	attr = make(map[string]string)
+	matches := regSplitAttr.FindAllString(l, -1)
+	for _, m := range matches {
+		ps := strings.Split(m, "=")
+		if len(ps) < 2 {
+			err = errors.New("invalid attribute list: " + m)
+			return
+		}
+		attr[ps[0]] = strings.Trim(ps[1], "\"")
+	}
 	return
 }

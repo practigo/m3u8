@@ -17,6 +17,7 @@ var (
 	ErrMissingStream   = errors.New("missing #EXT-X-STREAM-INF tag")
 	ErrInvalidPlaylist = errors.New("invalid playlist: neither master nor media playlist")
 	ErrNotMaster       = errors.New("not master playlist")
+	ErrMissingAttr     = errors.New("missing required attribute")
 )
 
 // Playlist is a m3u8 playlist.

@@ -146,22 +146,6 @@ func TestErrors(t *testing.T) {
 	}
 }
 
-func TestBlankLines(t *testing.T) {
-	f, err := os.Open("testdata/blank-lines.m3u8")
-	if err != nil {
-		t.Fatal("open test file", err)
-	}
-	defer f.Close()
-
-	p, err := m3u8.Decode(f)
-
-	if err != nil {
-		t.Fatal(err)
-	} else {
-		t.Log(p.Marshal())
-	}
-}
-
 func TestIsMediaPlaylistTag(t *testing.T) {
 	line := "#EXT-X-VERSION:3"
 	if !m3u8.IsMediaPlaylistTag(line) {
@@ -216,5 +200,53 @@ func TestTryDecodeMaster(t *testing.T) {
 	_, err = m3u8.TryDecodeMaster(f)
 	if err != m3u8.ErrNotMaster {
 		t.Fatal("should report no master")
+	}
+}
+
+func TestMoreM3U8s(t *testing.T) {
+	files := []string{
+		"testdata/blank-lines.m3u8",
+		"testdata/cmaf-byterange.m3u8",
+	}
+
+	for _, file := range files {
+		f, err := os.Open(file)
+		if err != nil {
+			t.Fatal("open test file", file, err)
+		}
+		defer f.Close()
+
+		p, err := m3u8.Decode(f)
+		if err != nil {
+			t.Fatal("decode m3u8", file, err)
+		}
+
+		out := p.Marshal()
+		// t.Log(out)
+
+		_, err = m3u8.Decode(bytes.NewBuffer([]byte(out)))
+		if err != nil {
+			t.Fatal("marshal output should be decode right:", file, err)
+		}
+	}
+}
+
+func TestSplitAttributeList(t *testing.T) {
+	l, err := m3u8.SplitAttributeList(`URI="init.mp4",BYTERANGE="596@0"`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(l) != 2 || l["URI"] != "init.mp4" || l["BYTERANGE"] != "596@0" {
+		t.Fatal("wrong split")
+	}
+
+	l, err = m3u8.SplitAttributeList(`TYPE=AUDIO,URI="audio,with-comma.mp4",BANDWIDTH=1280000`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(l) != 3 || l["TYPE"] != "AUDIO" || l["URI"] != "audio,with-comma.mp4" ||
+		l["BANDWIDTH"] != "1280000" {
+		t.Logf("%#+v", l)
+		t.Fatal("wrong split 2")
 	}
 }

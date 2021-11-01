@@ -8,6 +8,32 @@ import (
 	"strings"
 )
 
+// Range is a Media Segment from a sub-range of the resource.
+type Range struct {
+	Len   int
+	Start *int
+}
+
+func (r *Range) String() string {
+	if r.Start != nil {
+		return fmt.Sprintf("%d@%d", r.Len, *r.Start)
+	}
+	return fmt.Sprintf("%d", r.Len)
+}
+
+// XMapAttr is the attributes of the Media Segment init section.
+type XMapAttr struct {
+	URI       string
+	ByteRange *Range
+}
+
+func (m *XMapAttr) String() string {
+	if m.ByteRange != nil {
+		return fmt.Sprintf(`URI="%s",BYTERANGE="%s"`, m.URI, m.ByteRange)
+	}
+	return fmt.Sprintf(`URI="%s"`, m.URI)
+}
+
 // Entry is a m3u8 entry.
 type Entry struct {
 	URI           string
@@ -15,12 +41,20 @@ type Entry struct {
 	Title         string // optional second parameter for EXTINF tag
 	Discontinuity bool
 
+	// optional
+	ByteRange *Range
+	XMap      *XMapAttr
+
 	Directives string // Directives separated by '\n' to avoid []string or map for easy comparison
 
 	e *list.Element
 }
 
 func (s *Entry) marshalTo(w io.Writer) {
+	if s.XMap != nil {
+		writeLine(w, fmt.Sprintf("%s:%s", mapTag, s.XMap))
+	}
+
 	if s.Discontinuity {
 		writeLine(w, disTag)
 	}
@@ -30,6 +64,10 @@ func (s *Entry) marshalTo(w io.Writer) {
 	}
 
 	writeLine(w, fmt.Sprintf("#EXTINF:%.6f,%s", s.Duration, s.Title))
+
+	if s.ByteRange != nil {
+		writeLine(w, fmt.Sprintf("%s:%s", rangeTag, s.ByteRange))
+	}
 
 	writeLine(w, s.URI)
 }

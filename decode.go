@@ -25,6 +25,7 @@ const (
 	infTag   = "#EXTINF"
 	disTag   = "#EXT-X-DISCONTINUITY"
 	rangeTag = "#EXT-X-BYTERANGE"
+	mapTag   = "#EXT-X-MAP"
 )
 
 var playlistTags = []string{
@@ -62,6 +63,40 @@ func parseInt(line, tag string) (int, error) {
 	return strconv.Atoi(line[len(tag)+1:]) // plus one for ":"
 }
 
+func parseRangeTag(l string) (r *Range, err error) {
+	// #EXT-X-BYTERANGE:<n>[@<o>]
+	r = new(Range)
+	if sepIndex := strings.Index(l, "@"); sepIndex > -1 {
+		r.Len, err = strconv.Atoi(l[:sepIndex])
+		if err != nil {
+			return
+		}
+		var st int
+		st, err = strconv.Atoi(l[sepIndex+1:])
+		r.Start = &st
+	} else {
+		r.Len, err = strconv.Atoi(l)
+	}
+	return
+}
+
+func parseMapTag(l string) (m *XMapAttr, err error) {
+	m = new(XMapAttr)
+	attr, err := SplitAttributeList(l)
+	if err != nil {
+		return
+	}
+	if uri, ok := attr["URI"]; ok {
+		m.URI = uri
+	} else {
+		return m, ErrMissingAttr
+	}
+	if br, ok := attr["BYTERANGE"]; ok {
+		m.ByteRange, err = parseRangeTag(strings.Trim(br, "\""))
+	}
+	return
+}
+
 func decodeLine(l string, p *Playlist, state *decodecState) (err error) {
 	// Each line is a URI, is blank, or starts with the
 	// character '#'.  Blank lines are ignored.
@@ -97,6 +132,16 @@ func decodeLine(l string, p *Playlist, state *decodecState) (err error) {
 		} else {
 			err = errors.New("no \",\" in info tag")
 		}
+		return err
+	}
+
+	if strings.HasPrefix(l, rangeTag) {
+		state.cur.ByteRange, err = parseRangeTag(l[len(rangeTag)+1:]) // + ":"
+		return err
+	}
+
+	if strings.HasPrefix(l, mapTag) {
+		state.cur.XMap, err = parseMapTag(l[len(mapTag)+1:]) // + ":"
 		return err
 	}
 
