@@ -3,7 +3,6 @@ package m3u8
 import (
 	"bufio"
 	"bytes"
-	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -86,7 +85,7 @@ func IsMaster(r io.Reader) (bool, error) {
 
 	err := s.Err()
 	if err == nil {
-		err = errors.New("invalid playlist: neither master nor media playlist")
+		err = ErrInvalidPlaylist
 	}
 
 	return false, err

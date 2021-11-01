@@ -11,12 +11,12 @@ import (
 
 // exported errors
 var (
-	ErrUnknownLine = errors.New("unknown line")
-	ErrMissingInf  = errors.New("missing #EXTINF tag")
-	ErrInvalidSeg  = errors.New("invalid Entry")
-
-	ErrMissingStream = errors.New("missing #EXT-X-STREAM-INF tag")
-	ErrNotMaster     = errors.New("not master playlist")
+	// ErrUnknownLine = errors.New("unknown line") // DEPRECATED
+	ErrMissingInf      = errors.New("missing #EXTINF tag")
+	ErrInvalidSeg      = errors.New("invalid Entry")
+	ErrMissingStream   = errors.New("missing #EXT-X-STREAM-INF tag")
+	ErrInvalidPlaylist = errors.New("invalid playlist: neither master nor media playlist")
+	ErrNotMaster       = errors.New("not master playlist")
 )
 
 // Playlist is a m3u8 playlist.
