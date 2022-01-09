@@ -41,7 +41,7 @@ type Playlist struct {
 func New() *Playlist {
 	p := new(Playlist)
 	p.l = list.New()
-	p.SeqNo = -1
+	p.SeqNo = 0
 	p.Version = -1
 	return p
 }
@@ -112,6 +112,11 @@ func (p *Playlist) MarshalToWithErr(iw io.Writer) error {
 	p.MarshalTo(w)
 
 	return w.err
+}
+
+// Len returns #segment of a playlist.
+func (p *Playlist) Len() int {
+	return p.l.Len()
 }
 
 // Marshal ...
