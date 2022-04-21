@@ -62,7 +62,7 @@ func (p *Playlist) Front() *Entry {
 	return nil
 }
 
-// Remove ...
+// Remove removes the Entry s.
 func (p *Playlist) Remove(s *Entry) error {
 	if s.e != nil {
 		p.l.Remove(s.e)
@@ -71,7 +71,7 @@ func (p *Playlist) Remove(s *Entry) error {
 	return ErrInvalidSeg
 }
 
-// InsertAfter ...
+// InsertAfter inserts the target Entry after Entry ref.
 func (p *Playlist) InsertAfter(ref *Entry, target Entry) error {
 	if ref.e != nil {
 		e := p.l.InsertAfter(&target, ref.e)
@@ -81,7 +81,7 @@ func (p *Playlist) InsertAfter(ref *Entry, target Entry) error {
 	return ErrInvalidSeg
 }
 
-// MarshalTo ...
+// MarshalTo writes the string form of the Playlist to a Writer.
 func (p *Playlist) MarshalTo(w io.Writer) {
 	writeLine(w, starter)
 	if p.Version > 0 {
@@ -106,7 +106,8 @@ func (p *Playlist) MarshalTo(w io.Writer) {
 	}
 }
 
-// MarshalToWithErr ...
+// MarshalToWithErr writes the string form of the Playlist to a Writer
+// and returns error occurred if any.
 func (p *Playlist) MarshalToWithErr(iw io.Writer) error {
 	w := &writer{iw: iw}
 	p.MarshalTo(w)
@@ -119,7 +120,7 @@ func (p *Playlist) Len() int {
 	return p.l.Len()
 }
 
-// Marshal ...
+// Marshal returns the string form of the Playlist.
 func (p *Playlist) Marshal() string {
 	var b bytes.Buffer
 	// b.Write never returns error

@@ -50,6 +50,7 @@ type Entry struct {
 	e *list.Element
 }
 
+// MarshalTo writes the string form of the Entry to a Writer.
 func (s *Entry) marshalTo(w io.Writer) {
 	if s.XMap != nil {
 		writeLine(w, fmt.Sprintf("%s:%s", mapTag, s.XMap))
@@ -72,7 +73,7 @@ func (s *Entry) marshalTo(w io.Writer) {
 	writeLine(w, s.URI)
 }
 
-// Marshal returns the string form of a entry
+// Marshal returns the string form of the Entry
 // with all its directives.
 func (s *Entry) Marshal() string {
 	var b bytes.Buffer

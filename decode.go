@@ -45,6 +45,7 @@ var playlistTags = []string{
 	// master only
 }
 
+// IsMediaPlaylistTag tells if a line is a media playlist tag.
 func IsMediaPlaylistTag(line string) bool {
 	for _, tag := range playlistTags[0:10] {
 		if strings.HasPrefix(line, tag) {

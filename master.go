@@ -30,6 +30,7 @@ type XStream struct {
 	Directives string
 }
 
+// Marshal returns the string form of the XStream.
 func (s XStream) Marshal() string {
 	ret := s.Directives
 	for _, m := range s.XMedia {
@@ -43,7 +44,7 @@ func (s XStream) Marshal() string {
 	return ret
 }
 
-// Master is a Master playlist.
+// Master is a master playlist.
 type Master struct {
 	// 	A Master Playlist MUST indicate a EXT-X-VERSION of 7 or higher if it
 	//    contains:
@@ -59,6 +60,7 @@ type Master struct {
 	Streams []XStream
 }
 
+// Marshal returns the string form of the Master playlist.
 func (m *Master) Marshal() string {
 	ret := starter + "\n"
 	if m.Version > 0 {

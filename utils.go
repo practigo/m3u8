@@ -8,6 +8,8 @@ import (
 	"strings"
 )
 
+// writer writes to the underlying io.Writer, record the
+// first error encounter and stop writing from there.
 type writer struct {
 	err error
 	iw  io.Writer
@@ -42,6 +44,9 @@ func ResolveURL(index, entry string) (resolved string, err error) {
 
 var regSplitAttr = regexp.MustCompile(`[^,]+="([^"]*)"|[^,]+=[^,]+`)
 
+// SplitAttributeList split the attribute list where the separator ","
+// might be surrounded by "". The return value of the attribute map is
+// un-quoted.
 func SplitAttributeList(l string) (attr map[string]string, err error) {
 	attr = make(map[string]string)
 	matches := regSplitAttr.FindAllString(l, -1)
