@@ -66,6 +66,19 @@ func TestM3U8(t *testing.T) {
 	}
 }
 
+func TestZeroDuration(t *testing.T) {
+	f, err := os.Open("testdata/zero.m3u8")
+	if err != nil {
+		t.Fatal("open test file", err)
+	}
+	defer f.Close()
+
+	_, err = m3u8.Decode(f)
+	if err != nil {
+		t.Fatal("decode m3u8", err)
+	}
+}
+
 func TestMarshal(t *testing.T) {
 	f, err := os.Open("testdata/sample.m3u8")
 	if err != nil {

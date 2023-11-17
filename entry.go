@@ -50,6 +50,14 @@ type Entry struct {
 	e *list.Element
 }
 
+// NewEntry returns a pointer to an empty Entry whose
+// Duration is set to -1 since 0 is valid.
+func NewEntry() *Entry {
+	ret := new(Entry)
+	ret.Duration = -1.0
+	return ret
+}
+
 // MarshalTo writes the string form of the Entry to a Writer.
 func (s *Entry) marshalTo(w io.Writer) {
 	if s.XMap != nil {

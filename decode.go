@@ -109,12 +109,12 @@ func decodeLine(l string, p *Playlist, state *decodecState) (err error) {
 
 	if !strings.HasPrefix(l, "#") {
 		// URI
-		if state.cur.Duration == 0.0 {
+		if state.cur.Duration < 0.0 {
 			return ErrMissingInf
 		}
 		state.cur.URI = l
 		p.Append(*state.cur)
-		state.cur = new(Entry)
+		state.cur = NewEntry()
 		return nil
 	}
 
@@ -183,7 +183,7 @@ func Decode(r io.Reader) (p *Playlist, err error) {
 	p = New()
 
 	state := &decodecState{
-		cur: new(Entry),
+		cur: NewEntry(),
 	}
 
 	s := bufio.NewScanner(r)
